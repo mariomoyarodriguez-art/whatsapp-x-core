@@ -1,0 +1,12 @@
+guttenkleidungdb_high = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.mx-queretaro-1.oraclecloud.com))(connect_data=(service_name=gac006dbcd598d6_guttenkleidungdb_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+guttenkleidungdb_medium = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.mx-queretaro-1.oraclecloud.com))(connect_data=(service_name=gac006dbcd598d6_guttenkleidungdb_medium.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+guttenkleidungdb_low = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.mx-queretaro-1.oraclecloud.com))(connect_data=(service_name=gac006dbcd598d6_guttenkleidungdb_low.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+guttenkleidungdb_tp = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.mx-queretaro-1.oraclecloud.com))(connect_data=(service_name=gac006dbcd598d6_guttenkleidungdb_tp.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+guttenkleidungdb_tpurgent = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.mx-queretaro-1.oraclecloud.com))(connect_data=(service_name=gac006dbcd598d6_guttenkleidungdb_tpurgent.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+
+
