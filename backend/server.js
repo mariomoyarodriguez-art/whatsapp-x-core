@@ -21,10 +21,6 @@ app.use('/api/messages', messageRoutes);
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => { // Agregamos '0.0.0.0' para que escuche conexiones externas
     console.log(`Servidor Backend corriendo exitosamente en el puerto ${PORT}`);
-    console.log(`URLs base listas:`);
-    console.log(`   - http://localhost:${PORT}/api/auth`);
-    console.log(`   - http://localhost:${PORT}/api/chats`);
-    console.log(`   - http://localhost:${PORT}/api/messages`);
 });

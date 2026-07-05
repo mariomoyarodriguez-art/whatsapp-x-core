@@ -2,9 +2,11 @@ const oracledb = require('oracledb');
 const path = require('path');
 require('dotenv').config(); 
 
+
 const walletPath = path.join(__dirname, '../wallet');
 
 oracledb.autoCommit = true; 
+oracledb.initOracleClient({ libDir: undefined });
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT; 
 oracledb.fetchAsString = [ oracledb.CLOB ]; 
 
