@@ -877,6 +877,15 @@ if (view === 'contactInfo') {
             </div>
         )}
 
+        {toast && (
+            <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[999999] animate-bounce">
+                <div className={`px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 text-sm font-bold text-white ${toast.type === 'error' ? 'bg-red-600' : 'bg-[#00a884]'}`}>
+                    {toast.type === 'error' ? <X size={18} /> : <Check size={18} />}
+                    {toast.message}
+                </div>
+            </div>
+        )}
+
       </div>
     ); 
   }
