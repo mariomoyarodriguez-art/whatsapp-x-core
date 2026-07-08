@@ -87,8 +87,12 @@ export default function WhatsAppSQL() {
   const [groupName, setGroupName] = useState('');
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [authMode, setAuthMode] = useState('login');
+
+  // Para la barra de búsqueda principal y letrero Demo
+  const [mainMenuSearch, setMainMenuSearch] = useState(''); 
+  const [showDemoWarning, setShowDemoWarning] = useState(false);
   
-  // ESTADOS DE FORMULARIOS Y CONTRASEÑAS (AQUÍ DEBEN IR LOS HOOKS)
+  // ESTADOS DE FORMULARIOS Y CONTRASEÑAS 
   const [loginIdentifier, setLoginIdentifier] = useState(''); 
   const [password, setPassword] = useState('');
   const [showLoginPass, setShowLoginPass] = useState(false); 
@@ -135,6 +139,10 @@ export default function WhatsAppSQL() {
 
   const DEMO_MESSAGES_GROUP = [
       { id_msg: 'demo_msg_4', contenido: 'La arquitectura en Oracle Cloud es muy sólida.', tipo_msg: 'text', hora_envio: new Date(Date.now() - 3600000).toISOString(), isMe: false, senderId: '2222222222', senderName: 'Carlos Dev', status: 'visto' }
+  ];
+  const DEMO_GROUP_MEMBERS = [
+      { num_Tel: '0000000000', nombre: 'Reclutador', apellido_pat: 'Demo', foto_perfil: 'https://api.dicebear.com/7.x/initials/svg?seed=Reclutador' },
+      { num_Tel: '2222222222', nombre: 'Carlos', apellido_pat: 'Dev', foto_perfil: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos' }
   ];
 
   // FUNCIÓN MAESTRA ADAPTADA A RUTA BASE
@@ -249,7 +257,9 @@ export default function WhatsAppSQL() {
 
   useEffect(() => {
      if (activeChat) {
-         if (activeChat.isGroup) { 
+         if (user?.num_Tel === '0000000000' && activeChat.isGroup) {
+             setGroupMembers(DEMO_GROUP_MEMBERS);
+         } else if (activeChat.isGroup) { 
              loadGroupMembers(); 
          } else {
              const isKnownContact = contacts.some(c => c.num_Tel === activeChat.otherTel);
@@ -260,7 +270,7 @@ export default function WhatsAppSQL() {
              }
          }
      }
-  }, [activeChat, messages, chatUser, contacts]);
+  }, [activeChat, messages, chatUser, contacts, user]);
 
   const loadContacts = async () => { const data = await apiCall(`/chats/contacts/${user.num_Tel}`); if (data) setContacts(data); return data; };
   
@@ -342,7 +352,9 @@ export default function WhatsAppSQL() {
   const handleLogin = async (e) => { e.preventDefault(); setLoading(true); const res = await apiCall('/auth/login', 'POST', { num_Tel: loginIdentifier, password }); setLoading(false); if (res && res.success) { sessionStorage.setItem('whatsapp_user', JSON.stringify(res.user)); setUser(res.user); const realName = res.user.name || res.user.nombre || ''; setProfileData({ displayName: realName + ' ' + res.user.apellido_pat, phone: res.user.num_Tel, status: res.user.puesto || 'Empleado', photoURL: res.user.photoURL || '' }); setView('chat'); } };
   
   const handleDemoLogin = async () => { 
+      showToast("Conectando... Si el servidor estaba inactivo, tomará ~50s en despertar.", "success");
       setLoading(true); 
+      
       const demoPhone = '0000000000'; 
       const demoPass = 'demo123';
       
@@ -355,7 +367,7 @@ export default function WhatsAppSQL() {
           const realName = res.user.name || res.user.nombre || ''; 
           setProfileData({ displayName: realName + ' ' + res.user.apellido_pat, phone: res.user.num_Tel, status: res.user.puesto || 'Invitado', photoURL: res.user.photoURL || '' }); 
           setView('chat'); 
-          showToast("¡Bienvenido al modo Demo!", "success");
+          setShowDemoWarning(true); 
       } else {
           showToast("Falta crear el usuario Demo en Oracle", "error");
       }
@@ -793,8 +805,37 @@ export default function WhatsAppSQL() {
       {/* PANEL IZQUIERDO: LISTA DE CHATS */}
       <div className={`w-full md:w-[400px] border-r border-[#2f3b43] flex flex-col ${activeChat && 'hidden md:flex'}`}>
          <div className="h-16 bg-[#202c33] flex items-center justify-between px-4 border-b border-[#2f3b43]"><div className="flex items-center gap-3"><img src={user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.num_Tel}`} className="w-10 h-10 rounded-full bg-white cursor-pointer hover:opacity-80 object-cover" onClick={() => setView('profile')} title="Mi Perfil" /><p className="font-bold text-sm truncate w-24">{user.nombre}</p></div><div className="flex gap-4 text-[#aebac1]"><button onClick={() => setView('contacts')}><Users size={20}/></button><button onClick={() => setView('newGroup')}><Plus size={20}/></button><button onClick={handleLogout}><LogOut size={20}/></button></div></div>
-         <div className="p-2 bg-[#111b21]"><div className="flex items-center bg-[#202c33] rounded-lg px-3 py-1.5"><Search size={18} className="text-[#aebac1] mr-3" /><input type="text" placeholder="Busca un chat..." className="bg-transparent w-full focus:outline-none text-sm text-[#d1d7db]" /></div></div>
-         <div className="flex-1 overflow-y-auto custom-scrollbar">{chatList.map(chat => (<div key={chat.id} onClick={() => handleSelectChat(chat)} className={`flex items-center p-3 cursor-pointer hover:bg-[#202c33] border-b border-[#2f3b43] ${activeChat?.id === chat.id ? 'bg-[#2a3942]' : ''}`}><img src={chat.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.name}`} className="w-12 h-12 rounded-full bg-gray-600 mr-3 object-cover"/><div className="flex-1 overflow-hidden"><div className="flex justify-between"><h3 className="font-normal truncate">{chat.name}</h3><span className="text-xs text-[#8696a0]">{chat.lastTime}</span></div><p className="text-sm text-[#8696a0] truncate">{chat.lastMessage}</p></div></div>))}</div>
+         
+         {/* BUSCADOR */}
+         <div className="p-2 bg-[#111b21]">
+             <div className="flex items-center bg-[#202c33] rounded-lg px-3 py-1.5">
+                 <Search size={18} className="text-[#aebac1] mr-3" />
+                 <input 
+                    type="text" 
+                    placeholder="Busca un chat..." 
+                    value={mainMenuSearch}
+                    onChange={(e) => setMainMenuSearch(e.target.value)}
+                    className="bg-transparent w-full focus:outline-none text-sm text-[#d1d7db]" 
+                 />
+             </div>
+         </div>
+         {/* LISTA DE CHATS CON FILTRO APLICADO */}
+         <div className="flex-1 overflow-y-auto custom-scrollbar">
+             {chatList
+                .filter(chat => normalizeText(chat.name).includes(normalizeText(mainMenuSearch)))
+                .map(chat => (
+                <div key={chat.id} onClick={() => handleSelectChat(chat)} className={`flex items-center p-3 cursor-pointer hover:bg-[#202c33] border-b border-[#2f3b43] ${activeChat?.id === chat.id ? 'bg-[#2a3942]' : ''}`}>
+                     <img src={chat.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.name}`} className="w-12 h-12 rounded-full bg-gray-600 mr-3 object-cover"/>
+                     <div className="flex-1 overflow-hidden">
+                         <div className="flex justify-between">
+                             <h3 className="font-normal truncate">{chat.name}</h3>
+                             <span className="text-xs text-[#8696a0]">{chat.lastTime}</span>
+                         </div>
+                         <p className="text-sm text-[#8696a0] truncate">{chat.lastMessage}</p>
+                     </div>
+                 </div>
+             ))}
+         </div>
       </div>
 
       {/* PANEL DERECHO: CONVERSACIÓN */}
@@ -975,7 +1016,29 @@ export default function WhatsAppSQL() {
           </div>
         </div>
       ) : (
-        <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-[#222e35] text-center border-b-8 border-[#00a884]"><h1 className="text-3xl text-[#e9edef] font-light mb-4">WhatsApp X</h1><p className="text-[#8696a0]">Selecciona un chat</p></div>
+        <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-[#222e35] text-center border-b-8 border-[#00a884]"><h1 className="text-3xl text-[#e9edef] font-light mb-4">WhatsApp X</h1>
+        <p className="text-[#8696a0]">Selecciona un chat</p></div>
+      )}
+      {/* MODAL DE ADVERTENCIA DEMO */}
+      {showDemoWarning && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[99999] p-4">
+              <div className="bg-[#202c33] p-8 rounded-lg max-w-sm w-full border border-[#00a884] shadow-2xl text-center relative animate-pulse-once">
+                  <h3 className="text-[#00a884] font-bold text-xl mb-4 flex items-center justify-center gap-2">
+                      ⚠️ Versión de Demostración
+                  </h3>
+                  <p className="text-[#e9edef] mb-6 text-sm leading-relaxed">
+                      Por protección del portafolio y de la base de datos central en Oracle, <strong>la mayoría de las acciones de escritura están inhabilitadas</strong>.
+                      <br/><br/>
+                      Podrá navegar libremente y probar nuestra integración de traducción en tiempo real con la API de DeepL (Límite: 15 peticiones).
+                  </p>
+                  <button 
+                      onClick={() => setShowDemoWarning(false)} 
+                      className="w-full bg-[#00a884] text-[#111b21] font-bold py-3 rounded hover:bg-[#008f6f] transition-colors"
+                  >
+                      Entendido
+                  </button>
+              </div>
+          </div>
       )}
     </div>
   );
