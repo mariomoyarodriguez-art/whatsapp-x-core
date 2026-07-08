@@ -58,7 +58,7 @@ export default function WhatsAppSQL() {
   const [user, setUser] = useState(null);           
   const [loading, setLoading] = useState(true);     
   const [view, setView] = useState('auth');         
-  
+  const [isWakingUp, setIsWakingUp] = useState(false);
   const [activeChat, setActiveChat] = useState(null);   
   const [chatUser, setChatUser] = useState(null);       
   const [groupMembers, setGroupMembers] = useState([]); 
@@ -129,6 +129,34 @@ export default function WhatsAppSQL() {
       return null;
     }
   };
+
+  // --- LÓGICA DE LATENCIA (COLD START) ---
+  useEffect(() => {
+    if (sessionStorage.getItem('whatsappx_server_awake')) return;
+    
+    let isMounted = true;
+    
+    const timer = setTimeout(() => {
+      if (isMounted) setIsWakingUp(true);
+    }, 1500);
+
+    const baseUrl = API_URL ? API_URL.replace(/\/api\/?$/, '') : 'http://localhost:3000';
+    
+    fetch(`${baseUrl}/api/ping`)
+      .then((res) => {
+        if (res.ok && isMounted) {
+          clearTimeout(timer);
+          setIsWakingUp(false);
+          sessionStorage.setItem('whatsappx_server_awake', 'true');
+        }
+      })
+      .catch(() => console.log("Esperando respuesta del servidor (Cold Start)..."));
+
+    return () => { 
+      isMounted = false; 
+      clearTimeout(timer); 
+    };
+  }, []);
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem('whatsapp_user');
@@ -654,6 +682,25 @@ export default function WhatsAppSQL() {
 
   return (
     <div className="flex h-screen bg-[#0b141a] text-[#e9edef] overflow-hidden font-sans">
+
+    {/* --- LETRERO DE LATENCIA (COLD START) --- */}
+      {isWakingUp && (
+        <div style={{ 
+          backgroundColor: '#f59e0b', 
+          color: 'white', 
+          textAlign: 'center', 
+          padding: '12px', 
+          fontWeight: 'bold', 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          zIndex: 9999, 
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)' 
+        }}>
+          ⏳ Reiniciando servidor por inactividad, esto tomará un minuto...
+        </div>
+      )}
 
       {/* VISOR MULTIMEDIA A PANTALLA COMPLETA */}
       {mediaViewer && (
