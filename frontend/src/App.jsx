@@ -91,6 +91,8 @@ export default function WhatsAppSQL() {
   // Para la barra de búsqueda principal y letrero Demo
   const [mainMenuSearch, setMainMenuSearch] = useState(''); 
   const [showDemoWarning, setShowDemoWarning] = useState(false);
+
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', action: null });
   
   // ESTADOS DE FORMULARIOS Y CONTRASEÑAS 
   const [loginIdentifier, setLoginIdentifier] = useState(''); 
@@ -403,16 +405,35 @@ export default function WhatsAppSQL() {
       } 
   };
   
-  const handleDeleteChat = async () => { if (!activeChat) return; if (!confirm("¿Estás seguro de eliminar este chat?")) return; const res = await apiCall(`/chats/${activeChat.id}`, 'DELETE'); if (res && res.success) { setActiveChat(null); setMessages([]); loadChats(); } };
-  
+const handleDeleteChat = () => { 
+      if (!activeChat) return; 
+      setConfirmDialog({
+          isOpen: true,
+          title: 'Eliminar chat',
+          message: '¿Estás seguro de eliminar este chat por completo? Esta acción no se puede deshacer.',
+          action: async () => {
+              const res = await apiCall(`/chats/${activeChat.id}`, 'DELETE'); 
+              if (res && res.success) { setActiveChat(null); setMessages([]); loadChats(); }
+          }
+      });
+  };  
   const handleSendMessage = async (type = 'text', content = null) => { if (!user || !activeChat) return; const textToSend = content || inputText; if (type === 'text' && !textToSend.trim()) return; const tempMsg = { id_msg: 'temp_' + Date.now(), contenido: type === 'text' ? textToSend : 'Enviando...', mediaContent: (type !== 'text') ? content : null, tipo_msg: type, hora_envio: new Date().toISOString(), isMe: true, status: 'enviado' }; setMessages(prev => [...prev, tempMsg]); setInputText(''); setShowAttachMenu(false); setShowEmojiPicker(false); await apiCall('/messages/send', 'POST', { senderId: user.num_Tel, chatId: activeChat.id, content: type === 'text' ? textToSend : 'Archivo adjunto', mediaContent: (type !== 'text') ? content : null, messageType: type, isGroup: activeChat.isGroup }); loadMessages(activeChat.id, activeChat.isGroup, false); loadChats(true); };
   
   const handleSearchContact = async () => { if (!searchPhone) return; if (searchPhone === user.num_Tel) { showToast("No puedes agregarte a ti mismo."); return; } setSearchResult(null); const res = await apiCall(`/auth/search?tel=${searchPhone}`); if (res && res.found) { if (res.data.num_Tel === user.num_Tel) { showToast("No puedes agregarte a ti mismo."); return; } setSearchResult(res.data); } else showToast("Empleado no encontrado"); };
   
   const confirmAddContact = async () => { if (!searchResult) return; const res = await apiCall('/chats/contact/add', 'POST', { ownerTel: user.num_Tel, contactTel: searchResult.num_Tel }); if (res && res.success) { showToast("Contacto agregado"); setSearchResult(null); setSearchPhone(''); loadContacts(); } };
   
-  const handleDeleteContact = async (contactTel) => { if (!confirm("¿Eliminar contacto?")) return; const res = await apiCall('/chats/contact/remove', 'DELETE', { ownerTel: user.num_Tel, contactTel }); if (res && res.success) loadContacts(); };
-  
+const handleDeleteContact = (contactTel) => { 
+      setConfirmDialog({
+          isOpen: true,
+          title: 'Eliminar contacto',
+          message: '¿Estás seguro de eliminar a este contacto de tu agenda?',
+          action: async () => {
+              const res = await apiCall('/chats/contact/remove', 'DELETE', { ownerTel: user.num_Tel, contactTel }); 
+              if (res && res.success) loadContacts();
+          }
+      });
+  };  
   const createGroup = async () => { if (!groupName || selectedContacts.length === 0) return; const res = await apiCall('/chats/group/create', 'POST', { name: groupName, adminTel: user.num_Tel, members: selectedContacts.map(c => c.num_Tel) }); if(res && res.success) { showToast("Grupo creado"); setGroupName(''); setSelectedContacts([]); setView('chat'); loadChats(); } };
   
   const handleSaveProfile = async () => { 
@@ -484,8 +505,21 @@ export default function WhatsAppSQL() {
   
   const handleAddMemberToGroup = async (contact) => { if (!activeChat || !activeChat.isGroup) return; const res = await apiCall(`/chats/group/${activeChat.id}/members`, 'POST', { memberTel: contact.num_Tel }); if (res && res.success) { loadGroupMembers(); showToast(`${contact.name || contact.nombre} añadido.`); } else { showToast("Error."); } };
   
-  const handleRemoveMemberFromGroup = async (memberTel) => { if (!activeChat || !activeChat.isGroup) return; const memberToRemove = groupMembers.find(m => m.num_Tel === memberTel); const memberName = memberToRemove ? (memberToRemove.name || memberToRemove.nombre) : 'Usuario'; if (!confirm(`¿Eliminar a ${memberName}?`)) return; const res = await apiCall(`/chats/group/${activeChat.id}/members/${memberTel}`, 'DELETE'); if (res && res.success) { loadGroupMembers(); showToast(`${memberName} eliminado.`); } };
-
+const handleRemoveMemberFromGroup = (memberTel) => { 
+      if (!activeChat || !activeChat.isGroup) return; 
+      const memberToRemove = groupMembers.find(m => m.num_Tel === memberTel); 
+      const memberName = memberToRemove ? (memberToRemove.name || memberToRemove.nombre) : 'Usuario'; 
+      
+      setConfirmDialog({
+          isOpen: true,
+          title: 'Expulsar del grupo',
+          message: `¿Estás seguro de eliminar a ${memberName} de este grupo?`,
+          action: async () => {
+              const res = await apiCall(`/chats/group/${activeChat.id}/members/${memberTel}`, 'DELETE'); 
+              if (res && res.success) { loadGroupMembers(); showToast(`${memberName} eliminado.`); }
+          }
+      });
+  };
   if (loading) return <div className="h-screen bg-[#111b21] flex items-center justify-center text-white">Cargando...</div>;
 
   if (view === 'auth') { 
@@ -1040,6 +1074,37 @@ export default function WhatsAppSQL() {
               </div>
           </div>
       )}
+
+      {confirmDialog.isOpen && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[99999] p-4">
+              <div className="bg-[#202c33] p-6 rounded-lg max-w-sm w-full border border-[#2f3b43] shadow-2xl relative">
+                  <h3 className="text-[#e9edef] font-bold text-lg mb-2">{confirmDialog.title}</h3>
+                  <p className="text-[#8696a0] mb-8 text-sm">
+                      {confirmDialog.message}
+                  </p>
+                  <div className="flex justify-end gap-3">
+                      <button 
+                          onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+                          className="px-4 py-2 text-[#00a884] hover:bg-[#2a3942] rounded font-medium transition-colors"
+                      >
+                          Cancelar
+                      </button>
+                      <button 
+                          onClick={async () => {
+                              if (confirmDialog.action) {
+                                  await confirmDialog.action();
+                              }
+                              setConfirmDialog({ ...confirmDialog, isOpen: false });
+                          }}
+                          className="px-4 py-2 bg-[#ef4444] text-[#111b21] rounded font-bold hover:bg-[#dc2626] transition-colors"
+                      >
+                          Eliminar
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 }
