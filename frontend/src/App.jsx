@@ -405,8 +405,11 @@ export default function WhatsAppSQL() {
       } 
   };
   
-const handleDeleteChat = () => { 
+const handleDeleteChat = async () => { 
       if (!activeChat) return; 
+      // CORTAFUEGOS DEMO
+      if (user?.num_Tel === '0000000000') return showToast("Acción de borrado deshabilitada en modo Demo", "error");
+
       setConfirmDialog({
           isOpen: true,
           title: 'Eliminar chat',
@@ -416,14 +419,17 @@ const handleDeleteChat = () => {
               if (res && res.success) { setActiveChat(null); setMessages([]); loadChats(); }
           }
       });
-  };  
+  };
   const handleSendMessage = async (type = 'text', content = null) => { if (!user || !activeChat) return; const textToSend = content || inputText; if (type === 'text' && !textToSend.trim()) return; const tempMsg = { id_msg: 'temp_' + Date.now(), contenido: type === 'text' ? textToSend : 'Enviando...', mediaContent: (type !== 'text') ? content : null, tipo_msg: type, hora_envio: new Date().toISOString(), isMe: true, status: 'enviado' }; setMessages(prev => [...prev, tempMsg]); setInputText(''); setShowAttachMenu(false); setShowEmojiPicker(false); await apiCall('/messages/send', 'POST', { senderId: user.num_Tel, chatId: activeChat.id, content: type === 'text' ? textToSend : 'Archivo adjunto', mediaContent: (type !== 'text') ? content : null, messageType: type, isGroup: activeChat.isGroup }); loadMessages(activeChat.id, activeChat.isGroup, false); loadChats(true); };
   
   const handleSearchContact = async () => { if (!searchPhone) return; if (searchPhone === user.num_Tel) { showToast("No puedes agregarte a ti mismo."); return; } setSearchResult(null); const res = await apiCall(`/auth/search?tel=${searchPhone}`); if (res && res.found) { if (res.data.num_Tel === user.num_Tel) { showToast("No puedes agregarte a ti mismo."); return; } setSearchResult(res.data); } else showToast("Empleado no encontrado"); };
   
   const confirmAddContact = async () => { if (!searchResult) return; const res = await apiCall('/chats/contact/add', 'POST', { ownerTel: user.num_Tel, contactTel: searchResult.num_Tel }); if (res && res.success) { showToast("Contacto agregado"); setSearchResult(null); setSearchPhone(''); loadContacts(); } };
   
-const handleDeleteContact = (contactTel) => { 
+const handleDeleteContact = async (contactTel) => { 
+      // CORTAFUEGOS DEMO
+      if (user?.num_Tel === '0000000000') return showToast("Acción de borrado deshabilitada en modo Demo", "error");
+
       setConfirmDialog({
           isOpen: true,
           title: 'Eliminar contacto',
@@ -433,7 +439,7 @@ const handleDeleteContact = (contactTel) => {
               if (res && res.success) loadContacts();
           }
       });
-  };  
+  };
   const createGroup = async () => { if (!groupName || selectedContacts.length === 0) return; const res = await apiCall('/chats/group/create', 'POST', { name: groupName, adminTel: user.num_Tel, members: selectedContacts.map(c => c.num_Tel) }); if(res && res.success) { showToast("Grupo creado"); setGroupName(''); setSelectedContacts([]); setView('chat'); loadChats(); } };
   
   const handleSaveProfile = async () => { 
@@ -505,8 +511,11 @@ const handleDeleteContact = (contactTel) => {
   
   const handleAddMemberToGroup = async (contact) => { if (!activeChat || !activeChat.isGroup) return; const res = await apiCall(`/chats/group/${activeChat.id}/members`, 'POST', { memberTel: contact.num_Tel }); if (res && res.success) { loadGroupMembers(); showToast(`${contact.name || contact.nombre} añadido.`); } else { showToast("Error."); } };
   
-const handleRemoveMemberFromGroup = (memberTel) => { 
+const handleRemoveMemberFromGroup = async (memberTel) => { 
       if (!activeChat || !activeChat.isGroup) return; 
+      // CORTAFUEGOS DEMO
+      if (user?.num_Tel === '0000000000') return showToast("Acción de borrado deshabilitada en modo Demo", "error");
+
       const memberToRemove = groupMembers.find(m => m.num_Tel === memberTel); 
       const memberName = memberToRemove ? (memberToRemove.name || memberToRemove.nombre) : 'Usuario'; 
       
@@ -753,7 +762,124 @@ const handleRemoveMemberFromGroup = (memberTel) => {
   
   if (view === 'newGroup') { return <div className="min-h-screen bg-[#111b21] flex flex-col font-sans text-[#e9edef]"><div className="h-16 bg-[#202c33] flex items-center px-4 gap-4 border-b border-[#2f3b43]"><button onClick={()=>setView('chat')}><ArrowLeft size={24}/></button><h2 className="text-xl font-medium">Nuevo Grupo</h2></div><div className="p-4 max-w-lg mx-auto w-full space-y-6"><div className="bg-[#202c33] p-4 rounded-lg"><input type="text" placeholder="Nombre del grupo" className="w-full p-3 bg-[#111b21] rounded outline-none border-b-2 border-[#00a884]" value={groupName} onChange={e=>setGroupName(e.target.value)}/></div><div className="space-y-2"><h3 className="text-[#8696a0] text-sm uppercase mb-2">Seleccionar Participantes</h3>{contacts.map(c=>(<div key={c.num_Tel} onClick={()=>{if(selectedContacts.find(sc=>sc.num_Tel===c.num_Tel))setSelectedContacts(prev=>prev.filter(sc=>sc.num_Tel!==c.num_Tel));else setSelectedContacts(prev=>[...prev,c]);}} className={`flex items-center p-3 cursor-pointer border rounded-lg ${selectedContacts.find(sc=>sc.num_Tel===c.num_Tel)?'border-[#00a884] bg-[#005c4b]/20':'border-transparent hover:bg-[#202c33]'}`}><div className={`w-5 h-5 rounded border mr-3 flex items-center justify-center ${selectedContacts.find(sc=>sc.num_Tel===c.num_Tel)?'bg-[#00a884] border-[#00a884]':'border-gray-500'}`}>{selectedContacts.find(sc=>sc.num_Tel===c.num_Tel)&&<CheckCheck size={14} className="text-white"/>}</div><img src={c.photoURL||`https://api.dicebear.com/7.x/initials/svg?seed=${c.num_Tel}`} className="w-10 h-10 rounded-full mr-3"/><p>{c.name} {c.apellido_pat}</p></div>))}</div><button onClick={createGroup} disabled={!groupName||selectedContacts.length===0} className={`w-full font-bold p-3 rounded ${!groupName||selectedContacts.length===0?'bg-gray-600 text-gray-400':'bg-[#00a884] text-[#111b21] hover:bg-[#008f6f]'}`}>Crear Grupo</button></div></div>; }
   
-  if (view === 'contactInfo') { const displayUser = activeUserDisplay; if (!displayUser) return null; const isGroup = displayUser.isGroup; return <div className="min-h-screen bg-[#111b21] flex flex-col font-sans text-[#e9edef]"><div className="h-16 bg-[#202c33] flex items-center px-4 gap-4 border-b border-[#2f3b43]"><button onClick={()=>setView('chat')}><ArrowLeft size={24}/></button><h2 className="text-xl font-medium">{isGroup?'Info. del Grupo':'Info. del Contacto'}</h2></div><div className="flex flex-col items-center p-8 gap-4"><div className="relative group"><img src={displayUser.photoURL} className="w-40 h-40 rounded-full border-4 border-[#202c33] shadow-lg object-cover"/>{isGroup && (<label className="absolute bottom-0 right-0 bg-[#00a884] p-2 rounded-full cursor-pointer hover:bg-[#008f6f]"><Camera size={20} className="text-white"/><input type="file" className="hidden" accept="image/*" onChange={handleGroupImageChange}/></label>)}</div><h2 className="text-2xl font-bold text-center">{displayUser.name||displayUser.nombre} {displayUser.apellido_pat}</h2>{!isGroup && <p className="text-[#8696a0] text-lg">{displayUser.num_Tel}</p>}<div className="w-full max-w-md bg-[#202c33] rounded-lg p-4 mt-4 space-y-4"><div className="flex items-center gap-4 text-[#00a884]"><Briefcase/><div><p className="text-sm text-[#8696a0]">{isGroup?'Tipo':'Puesto'}</p><p className="font-medium text-white">{displayUser.puesto||'Empleado'}</p></div></div>{!isGroup && (<div className="flex items-center gap-4 text-[#00a884]"><Users/><div><p className="text-sm text-[#8696a0]">Departamento</p><p className="font-medium text-white">{displayUser.departamento||'General'}</p></div></div>)}{!isGroup && (<div className="flex items-center gap-4 text-[#00a884]"><Phone/><div><p className="text-sm text-[#8696a0]">Teléfono</p><p className="font-medium text-white">{displayUser.num_Tel}</p></div></div>)}{isGroup && (<div className="pt-2 border-t border-[#2f3b43]"><div className="flex justify-between items-center mb-3"><p className="text-[#00a884] text-sm font-bold flex items-center gap-2"><Users size={16}/> {groupMembers.length} Participantes</p><button onClick={()=>setShowAddMember(!showAddMember)} className="text-xs bg-[#202c33] border border-[#00a884] text-[#00a884] px-2 py-1 rounded hover:bg-[#00a884] hover:text-[#111b21] transition">{showAddMember?'Cerrar':'+ Añadir'}</button></div>{showAddMember && (<div className="mb-3 p-2 bg-[#111b21] rounded border border-[#2f3b43] max-h-40 overflow-y-auto"><p className="text-xs text-gray-500 mb-2 uppercase">Contactos disponibles</p>{contacts.filter(c=>!groupMembers.some(m=>m.num_Tel===c.num_Tel)).map(c=>(<div key={c.num_Tel} onClick={()=>handleAddMemberToGroup(c)} className="flex items-center justify-between p-2 hover:bg-[#202c33] cursor-pointer rounded"><div className="flex items-center gap-2"><img src={c.photoURL} className="w-6 h-6 rounded-full"/><span className="text-sm">{c.name}</span></div><Plus size={14} className="text-[#00a884]"/></div>))}{contacts.filter(c=>!groupMembers.some(m=>m.num_Tel===c.num_Tel)).length===0 && <p className="text-xs text-center p-2">No hay más contactos para añadir</p>}</div>)}<div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">{groupMembers.map((m,idx)=>(<div key={idx} className="flex items-center justify-between group"><div className="flex items-center gap-3"><img src={m.photoURL||`https://api.dicebear.com/7.x/initials/svg?seed=${m.num_Tel}`} className="w-10 h-10 rounded-full bg-gray-600"/><div><p className="font-medium text-sm">{m.name||m.nombre} {m.apellido_pat}</p><p className="text-xs text-[#8696a0]">{m.num_Tel}</p></div></div><button onClick={()=>handleRemoveMemberFromGroup(m.num_Tel)} className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-500/10 rounded-full transition"><Trash2 size={16}/></button></div>))}</div></div>)}</div></div></div>; }
+if (view === 'contactInfo') { 
+    const displayUser = activeUserDisplay; 
+    if (!displayUser) return null; 
+    const isGroup = displayUser.isGroup; 
+    
+    return (
+      <div className="min-h-screen bg-[#111b21] flex flex-col font-sans text-[#e9edef]">
+        
+        {/* CABECERA */}
+        <div className="h-16 bg-[#202c33] flex items-center px-4 gap-4 border-b border-[#2f3b43]">
+          <button onClick={()=>setView('chat')}><ArrowLeft size={24}/></button>
+          <h2 className="text-xl font-medium">{isGroup ? 'Info. del Grupo' : 'Info. del Contacto'}</h2>
+        </div>
+
+        {/* CONTENIDO PRINCIPAL */}
+        <div className="flex flex-col items-center p-8 gap-4">
+          <div className="relative group">
+            <img src={displayUser.photoURL} className="w-40 h-40 rounded-full border-4 border-[#202c33] shadow-lg object-cover"/>
+            {isGroup && (
+              <label className="absolute bottom-0 right-0 bg-[#00a884] p-2 rounded-full cursor-pointer hover:bg-[#008f6f]">
+                <Camera size={20} className="text-white"/>
+                <input type="file" className="hidden" accept="image/*" onChange={handleGroupImageChange}/>
+              </label>
+            )}
+          </div>
+          
+          <h2 className="text-2xl font-bold text-center">{displayUser.name||displayUser.nombre} {displayUser.apellido_pat}</h2>
+          {!isGroup && <p className="text-[#8696a0] text-lg">{displayUser.num_Tel}</p>}
+          
+          <div className="w-full max-w-md bg-[#202c33] rounded-lg p-4 mt-4 space-y-4">
+            
+            <div className="flex items-center gap-4 text-[#00a884]">
+              <Briefcase/>
+              <div>
+                <p className="text-sm text-[#8696a0]">{isGroup ? 'Tipo' : 'Puesto'}</p>
+                <p className="font-medium text-white">{displayUser.puesto||'Empleado'}</p>
+              </div>
+            </div>
+            
+            {!isGroup && (
+              <div className="flex items-center gap-4 text-[#00a884]">
+                <Users/>
+                <div>
+                  <p className="text-sm text-[#8696a0]">Departamento</p>
+                  <p className="font-medium text-white">{displayUser.departamento||'General'}</p>
+                </div>
+              </div>
+            )}
+            
+            {!isGroup && (
+              <div className="flex items-center gap-4 text-[#00a884]">
+                <Phone/>
+                <div>
+                  <p className="text-sm text-[#8696a0]">Teléfono</p>
+                  <p className="font-medium text-white">{displayUser.num_Tel}</p>
+                </div>
+              </div>
+            )}
+            
+            {/* SECCIÓN DE PARTICIPANTES DEL GRUPO */}
+            {isGroup && (
+              <div className="pt-2 border-t border-[#2f3b43]">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-[#00a884] text-sm font-bold flex items-center gap-2"><Users size={16}/> {groupMembers.length} Participantes</p>
+                  <button onClick={()=>setShowAddMember(!showAddMember)} className="text-xs bg-[#202c33] border border-[#00a884] text-[#00a884] px-2 py-1 rounded hover:bg-[#00a884] hover:text-[#111b21] transition">{showAddMember ? 'Cerrar' : '+ Añadir'}</button>
+                </div>
+                
+                {showAddMember && (
+                  <div className="mb-3 p-2 bg-[#111b21] rounded border border-[#2f3b43] max-h-40 overflow-y-auto">
+                    <p className="text-xs text-gray-500 mb-2 uppercase">Contactos disponibles</p>
+                    {contacts.filter(c=>!groupMembers.some(m=>m.num_Tel===c.num_Tel)).map(c=>(
+                      <div key={c.num_Tel} onClick={()=>handleAddMemberToGroup(c)} className="flex items-center justify-between p-2 hover:bg-[#202c33] cursor-pointer rounded">
+                        <div className="flex items-center gap-2">
+                          <img src={c.photoURL} className="w-6 h-6 rounded-full"/>
+                          <span className="text-sm">{c.name}</span>
+                        </div>
+                        <Plus size={14} className="text-[#00a884]"/>
+                      </div>
+                    ))}
+                    {contacts.filter(c=>!groupMembers.some(m=>m.num_Tel===c.num_Tel)).length===0 && <p className="text-xs text-center p-2">No hay más contactos para añadir</p>}
+                  </div>
+                )}
+                
+                <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+                  {groupMembers.map((m,idx)=>(
+                    <div key={idx} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-3">
+                        <img src={m.photoURL||`https://api.dicebear.com/7.x/initials/svg?seed=${m.num_Tel}`} className="w-10 h-10 rounded-full bg-gray-600"/>
+                        <div>
+                          <p className="font-medium text-sm">{m.name||m.nombre} {m.apellido_pat}</p>
+                          <p className="text-xs text-[#8696a0]">{m.num_Tel}</p>
+                        </div>
+                      </div>
+                      <button onClick={()=>handleRemoveMemberFromGroup(m.num_Tel)} className="md:opacity-0 md:group-hover:opacity-100 opacity-100 p-2 text-red-500 hover:bg-red-500/10 rounded-full transition"><Trash2 size={16}/></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {confirmDialog.isOpen && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[99999] p-4">
+                <div className="bg-[#202c33] p-6 rounded-lg max-w-sm w-full border border-[#2f3b43] shadow-2xl relative">
+                    <h3 className="text-[#e9edef] font-bold text-lg mb-2">{confirmDialog.title}</h3>
+                    <p className="text-[#8696a0] mb-8 text-sm">{confirmDialog.message}</p>
+                    <div className="flex justify-end gap-3">
+                        <button onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} className="px-4 py-2 text-[#00a884] hover:bg-[#2a3942] rounded font-medium transition-colors">Cancelar</button>
+                        <button onClick={async () => { if (confirmDialog.action) { await confirmDialog.action(); } setConfirmDialog({ ...confirmDialog, isOpen: false }); }} className="px-4 py-2 bg-[#ef4444] text-[#111b21] rounded font-bold hover:bg-[#dc2626] transition-colors">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+      </div>
+    ); 
+  }
 
   return (
     <div className="flex h-screen bg-[#0b141a] text-[#e9edef] overflow-hidden font-sans">
