@@ -115,6 +115,28 @@ export default function WhatsAppSQL() {
       setTimeout(() => setToast(null), 3500);
   };
 
+  const [demoTranslationCount, setDemoTranslationCount] = useState(0);
+
+  const DEMO_CONTACTS = [
+      { num_Tel: '1111111111', name: 'Ana', apellido_pat: 'Gómez', puesto: 'Recursos Humanos', photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana' },
+      { num_Tel: '2222222222', name: 'Carlos', apellido_pat: 'Dev', puesto: 'Líder Técnico', photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos' }
+  ];
+
+  const DEMO_CHATS = [
+      { id: 'chat_demo_1', isGroup: false, name: 'Ana Gómez', otherTel: '1111111111', lastMessage: 'I am very impressed with this translation feature. Can you test it?', timestamp: Date.now(), lastTime: '10:00 AM', photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana' },
+      { id: 'group_demo_1', isGroup: true, name: 'Tech Team Alpha', lastMessage: 'La arquitectura en Oracle Cloud es muy sólida.', timestamp: Date.now() - 3600000, lastTime: 'Ayer', photoURL: 'https://api.dicebear.com/7.x/initials/svg?seed=Tech' }
+  ];
+
+  const DEMO_MESSAGES_ANA = [
+      { id_msg: 'demo_msg_1', contenido: 'Hola, estuve revisando el portafolio y el código fuente.', tipo_msg: 'text', hora_envio: new Date(Date.now() - 60000).toISOString(), isMe: false, senderId: '1111111111', status: 'visto' },
+      { id_msg: 'demo_msg_2', contenido: '¡Hola Ana! Muchas gracias. Todo está corriendo sobre Node.js y Oracle Database 21c.', tipo_msg: 'text', hora_envio: new Date(Date.now() - 40000).toISOString(), isMe: true, senderId: '0000000000', status: 'visto' },
+      { id_msg: 'demo_msg_3', contenido: 'I am very impressed with this translation feature. Can you test it?', tipo_msg: 'text', hora_envio: new Date(Date.now() - 10000).toISOString(), isMe: false, senderId: '1111111111', status: 'visto' }
+  ];
+
+  const DEMO_MESSAGES_GROUP = [
+      { id_msg: 'demo_msg_4', contenido: 'La arquitectura en Oracle Cloud es muy sólida.', tipo_msg: 'text', hora_envio: new Date(Date.now() - 3600000).toISOString(), isMe: false, senderId: '2222222222', senderName: 'Carlos Dev', status: 'visto' }
+  ];
+
   // FUNCIÓN MAESTRA ADAPTADA A RUTA BASE
   const apiCall = async (endpoint, method = 'GET', body = null) => {
     try {
@@ -193,6 +215,13 @@ export default function WhatsAppSQL() {
 
   useEffect(() => {
     if (user) { 
+        if (user.num_Tel === '0000000000') {
+            setContacts(DEMO_CONTACTS);
+            setChatList(DEMO_CHATS);
+            if (activeChat?.id === 'chat_demo_1') setMessages(DEMO_MESSAGES_ANA);
+            else if (activeChat?.id === 'group_demo_1') setMessages(DEMO_MESSAGES_GROUP);
+            return; 
+        }
         loadContacts(); 
         loadChats(); 
         if (activeChat) loadMessages(activeChat.id, activeChat.isGroup, false); 
@@ -887,9 +916,9 @@ export default function WhatsAppSQL() {
           </div>
           
           <div className="bg-[#202c33] p-2 flex items-end gap-2 z-10 relative">
-             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} disabled={user?.num_Tel === '0000000000'} />
              
-             {showEmojiPicker && (
+             {showEmojiPicker && user?.num_Tel !== '0000000000' && (
                  <div className="absolute bottom-16 left-2 bg-[#202c33] border border-[#2f3b43] rounded-lg p-2 grid grid-cols-6 gap-2 shadow-xl z-50">
                      <div className="col-span-6 flex justify-between items-center pb-2 border-b border-[#2f3b43] mb-2">
                          <span className="text-xs text-gray-400">Emojis</span>
@@ -901,11 +930,46 @@ export default function WhatsAppSQL() {
                  </div>
              )}
 
-             <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 text-[#8696a0] hover:text-[#00a884]"><Smile/></button>
-             <button onClick={() => fileInputRef.current.click()} className="p-2 text-[#8696a0] hover:text-[#00a884]"><Paperclip/></button>
-             <div className="flex-1 bg-[#2a3942] rounded-lg flex items-center px-4 py-2 min-h-[45px]"><input type="text" value={inputText} onChange={e => setInputText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} placeholder={isRecording ? "Grabando..." : "Mensaje"} disabled={isRecording} className={`bg-transparent w-full outline-none text-[#d1d7db] text-sm ${isRecording ? 'italic text-[#00a884]' : ''}`}/></div>
+             {/* BOTONES DESHABILITADOS VISUALMENTE */}
+             <button 
+                disabled={user?.num_Tel === '0000000000'} 
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)} 
+                className={`p-2 text-[#8696a0] hover:text-[#00a884] ${user?.num_Tel === '0000000000' ? 'opacity-40 cursor-not-allowed' : ''}`}
+             >
+                <Smile/>
+             </button>
              
-             {!inputText && !isRecording && <button onClick={startRecording} className="p-3 text-[#8696a0] hover:text-white"><Mic size={20}/></button>}
+             <button 
+                disabled={user?.num_Tel === '0000000000'} 
+                onClick={() => fileInputRef.current.click()} 
+                className={`p-2 text-[#8696a0] hover:text-[#00a884] ${user?.num_Tel === '0000000000' ? 'opacity-40 cursor-not-allowed' : ''}`}
+             >
+                <Paperclip/>
+             </button>
+             
+             <div className="flex-1 bg-[#2a3942] rounded-lg flex items-center px-4 py-2 min-h-[45px]">
+                <input 
+                    type="text" 
+                    value={inputText} 
+                    onChange={e => setInputText(e.target.value)} 
+                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
+                    placeholder={user?.num_Tel === '0000000000' ? "Modo de demostración (Solo traducción)" : (isRecording ? "Grabando..." : "Mensaje")} 
+                    disabled={isRecording || user?.num_Tel === '0000000000'} 
+                    className={`bg-transparent w-full outline-none text-[#d1d7db] text-sm ${isRecording ? 'italic text-[#00a884]' : ''} ${user?.num_Tel === '0000000000' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                />
+             </div>
+             
+             {/* MICRÓFONO DESHABILITADO */}
+             {!inputText && !isRecording && (
+                <button 
+                    disabled={user?.num_Tel === '0000000000'} 
+                    onClick={startRecording} 
+                    className={`p-3 text-[#8696a0] hover:text-white ${user?.num_Tel === '0000000000' ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                    <Mic size={20}/>
+                </button>
+             )}
+             
              {isRecording && <button onClick={stopRecording} className="p-3 bg-red-500 rounded-full text-white animate-pulse"><Square size={20}/></button>}
              {!isRecording && inputText && <button onClick={() => handleSendMessage()} className="p-3 bg-[#00a884] rounded-full text-white"><Send size={20}/></button>}
           </div>

@@ -76,13 +76,12 @@ exports.sendMessage = async (req, res) => {
 
 // 3. Traducir contenido mediante la API de DeepL 
 exports.translateMessage = async (req, res) => {
-    const { text, targetLang, msgId, chatType } = req.body;
+    const { text, targetLang, msgId, chatType, isDemo } = req.body;
     const DEEPL_KEY = process.env.DEEPL_KEY;
     
     if (!DEEPL_KEY) return res.status(400).json({ error: "Falta configurar la API Key en el backend (.env)" });
     
     try {
-        // Usamos el formato URL Encoded, que es el más estable para la API de DeepL
         const params = new URLSearchParams();
         params.append('text', text);
         params.append('target_lang', targetLang || 'ES');
@@ -97,7 +96,11 @@ exports.translateMessage = async (req, res) => {
         const translatedText = response.data.translations[0].text;
         const detectedSourceLang = response.data.translations[0].detected_source_language;
 
-        // Intentar persistir en Oracle de forma aislada
+        if (isDemo) {
+            console.log("Traducción Demo: DeepL consultado, omitiendo guardado en base de datos.");
+            return res.json({ translatedText }); 
+        }
+
         try {
             if (chatType && msgId && !String(msgId).startsWith('temp')) {
                 const table = chatType === 'group' ? 'Traduccion_Gpal' : 'Traduccion_Ind';
