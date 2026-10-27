@@ -146,8 +146,6 @@ export default function WhatsAppSQL() {
       { num_Tel: '0000000000', nombre: 'Reclutador', apellido_pat: 'Demo', foto_perfil: 'https://api.dicebear.com/7.x/initials/svg?seed=Reclutador' },
       { num_Tel: '2222222222', nombre: 'Carlos', apellido_pat: 'Dev', foto_perfil: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos' }
   ];
-
-  // FUNCIÓN MAESTRA ADAPTADA A RUTA BASE
   const apiCall = async (endpoint, method = 'GET', body = null) => {
     try {
       const options = { method, headers: { 'Content-Type': 'application/json' } };
@@ -162,7 +160,7 @@ export default function WhatsAppSQL() {
     }
   };
 
-  // --- LÓGICA DE LATENCIA (COLD START) ---
+  // --- LÓGICA DE LATENCIA COLD START
   useEffect(() => {
     if (sessionStorage.getItem('whatsappx_server_awake')) return;
     
@@ -539,7 +537,7 @@ const handleRemoveMemberFromGroup = async (memberTel) => {
                       <h1 className="text-2xl font-bold text-[#00a884]">WhatsApp X</h1>
                   </div>
                   
-                  {/* FORMULARIO ÚNICO DE LOGIN */}
+                  {/* FORMULARIO DE LOGIN */}
                   <form onSubmit={handleLogin} className="space-y-4">
                       <input 
                           type="tel" 
@@ -549,8 +547,6 @@ const handleRemoveMemberFromGroup = async (memberTel) => {
                           onChange={e=>setLoginIdentifier(e.target.value)} 
                           required
                       />
-                      
-                      {/* CONTENEDOR RELATIVO PARA EL OJITO */}
                       <div className="relative">
                           <input 
                               type={showLoginPass ? "text" : "password"} 
@@ -931,7 +927,6 @@ if (view === 'contactInfo') {
           </div>
       )}
       
-      {/* NOTIFICACIONES TOAST PROFESIONALES */}
       {toast && (
         <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] animate-bounce">
           <div className={`px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 text-sm font-bold text-white ${toast.type === 'error' ? 'bg-red-600' : 'bg-[#00a884]'}`}>
